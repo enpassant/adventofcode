@@ -3,7 +3,7 @@ package adventofcode
 import scala.io.Source
 
 object Puzzles2021Day9 extends App {
-  def p2021_7(
+  def puzzle(
     input: String
   ) = {
     val heights = readMap(input)
@@ -14,7 +14,7 @@ object Puzzles2021Day9 extends App {
       .sum
   }
 
-  def p2021_7_2(
+  def puzzleTwo(
     input: String
   ) = {
     val heights = readMap(input)
