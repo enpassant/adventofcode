@@ -5,8 +5,8 @@ import org.scalatest.matchers.should._
 import adventofcode.Puzzles2021Day10._
 
 class Puzzles2021Day10Spec extends AnyFunSpec with Matchers {
-  val testData = "input_10_test.txt"
-  val bigData = "input_10.txt"
+  val testData = "samples/input_10_test.txt"
+  val bigData = "samples/input_10.txt"
 
   describe("Day 10.") {
     it("Part one with test data") {

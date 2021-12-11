@@ -4,8 +4,8 @@ import org.scalatest.funspec.AnyFunSpec
 import adventofcode.Puzzles2021Day7._
 
 class Puzzles2021Day7Spec extends AnyFunSpec {
-  val testData = "input_7_test.txt"
-  val bigData = "input_7.txt"
+  val testData = "samples/input_7_test.txt"
+  val bigData = "samples/input_7.txt"
 
   describe("Day 7.") {
     it("Part one with test data") {
