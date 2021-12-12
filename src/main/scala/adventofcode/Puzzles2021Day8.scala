@@ -5,9 +5,9 @@ import scala.util.Random
 
 object Puzzles2021Day8 {
   def p2021_8(
-    input: String
+    fileName: String
   ) = {
-    val population = readDigits(input)
+    val population = readDigits(fileName)
 
     population
       .flatMap(arr => arr(1).toList.map(_.length))
@@ -16,40 +16,63 @@ object Puzzles2021Day8 {
   }
 
   def p2021_8_2(
-    input: String
+    fileName: String
   ) = {
-    val population = readDigits(input)
+    val population = readDigits(fileName)
 
     population
-      .map(arr => calcWireMap(arr(0).toList, arr(1).toList))
-      .sum
+      .map(arr => convertToDigit(
+        arr(0).toList,
+        arr(1).toList,
+        calcMapping(arr(0).toList)
+    ))
+    .sum
   }
 
-  def toPermutationMap(permutation: String) = {
-    ('a' to 'z').zip(permutation).toMap
-  }
-
-  def checkPermutation(digitWires: List[String], permutation: String) = {
-    val wireMap = toPermutationMap(permutation)
-    digitWires.forall(str => {
-      val transformedStr = str.map(wireMap)
-      baseMap.values.exists(transformedStr.toSet == _.toSet)
-    })
-  }
-
-  def calcWireMap(digitWires: List[String], numbers: List[String]) = {
-    allPermutations.find(permutation =>
-        checkPermutation(digitWires, permutation)
-    ).map(permutation => {
-      numbers.map(str => str.map(toPermutationMap(permutation)))
-        .map(str => baseMap.find {
-          case(number, s) => str.toSet == s.toSet
-        })
-      .map {
-        case Some((number, s)) => number
-        case _ => 0
+  def calcMapping(digitWires: List[String]) = {
+    val charMap = digitWires.flatMap(_.toList)
+      .groupMapReduce(s => s)(s => 1)(_ + _)
+      .foldLeft(Map[Char, Char]()) {
+        case (map, (k, v)) =>
+          if (v == 4) map + ('e' -> k)
+          else if (v == 6) map + ('b' -> k)
+          else if (v == 9) map + ('f' -> k)
+          else map
       }
-    }).getOrElse(Nil)
+    val numberMap = digitWires.foldLeft(Map[Int, String]()) {
+      case (map, v) =>
+        if (v.length == 2) map + (1 -> v)
+        else if (v.length == 3) map + (7 -> v)
+        else if (v.length == 4) map + (4 -> v)
+        else if (v.length == 7) map + (8 -> v)
+        else map
+    }
+
+    val eMap = charMap('e')
+    val bMap = charMap('b')
+    val fMap = charMap('f')
+    val cMap = (numberMap(1).toSet - fMap).head
+    val aMap = (numberMap(7).toSet - cMap - fMap).head
+    val dMap = (numberMap(4).toSet - bMap - cMap - fMap).head
+    val gMap = (numberMap(8).toSet - aMap - bMap - cMap - dMap - eMap - fMap).head
+
+    (charMap + ('c' -> cMap) + ('a' -> aMap) + ('d' -> dMap) + ('g' -> gMap))
+      .map { case (k, v) => (v -> k) }
+  }
+
+  def convertToDigit(
+    digitWires: List[String],
+    numbers: List[String],
+    charMap: Map[Char, Char]
+  ) = {
+    numbers.map(str => str.map(charMap))
+      .map(str => baseMap.find {
+        case(number, s) => str.toSet == s.toSet
+      })
+    .map {
+      case Some((number, s)) => number
+      case _ => 0
+    }
     .foldLeft(0) {
       case (number, digit) => number * 10 + digit
     }
@@ -82,17 +105,4 @@ object Puzzles2021Day8 {
     8 -> "abcdefg",
     9 -> "abcdfg"
   )
-
-  val wires = baseMap(8)
-    .toSet
-
-  def allPermutations = baseMap(8).permutations
-
-  val possibleDigits = baseMap.toList.map {
-    case (digit, str) => digit -> str.length
-  }.groupMap {
-    case (digit, length) => length
-  } {
-    case (digit, length) => digit
-  }
 }

@@ -12,7 +12,7 @@ class Puzzles2021Day8Spec extends AnyFunSpec with Matchers {
   describe("Day 8.") {
     it("Part one with test data") {
       val result = p2021_8(
-        testData
+        test2Data
       )
       result should equal (26)
     }
@@ -26,13 +26,13 @@ class Puzzles2021Day8Spec extends AnyFunSpec with Matchers {
       val result = p2021_8_2(
         testData
       )
-      result should equal (61229)
+      result should equal (5353)
     }
     it("Part two with test 2 data") {
       val result = p2021_8_2(
         test2Data
       )
-      result should equal (5353)
+      result should equal (61229)
     }
     it("Part two with big data") {
       val result = p2021_8_2(
