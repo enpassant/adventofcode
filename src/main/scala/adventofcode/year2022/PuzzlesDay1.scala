@@ -4,8 +4,6 @@ import scala.io.Source
 
 object PuzzlesDay1 extends App {
 
-  case class Elf(calories: List[Int])
-
   def puzzle(
     input: String
   ) = {
