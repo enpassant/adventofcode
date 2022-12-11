@@ -8,7 +8,7 @@ object PuzzlesDay11 extends App {
   case class Monkey(
     number: Int,
     items: List[Long] = Nil,
-    operation: String = "",
+    operation: Long => Long = v => v,
     test: Int = 0,
     throwIfTrue: Int = 0,
     throwIfFalse: Int = 0,
@@ -71,7 +71,7 @@ object PuzzlesDay11 extends App {
     adjustWorryLevel: Long => Long
   ) = {
     val inspectedElement = monkey.items.head
-    val worryLevel = runOperation(monkey.operation, inspectedElement)
+    val worryLevel = monkey.operation(inspectedElement)
     val wl = adjustWorryLevel(worryLevel)
     val test = (wl % monkey.test) == 0
     val newMonkey = monkey.copy(
@@ -86,12 +86,6 @@ object PuzzlesDay11 extends App {
       items = throwedMonkey.items :+ wl
     )
     (newMonkeys.updated(throwNumber, newThrowedMonkey), newMonkey)
-  }
-
-  def runOperation(operation: String, worryLevel: Long) = operation match {
-    case s"old * old" => worryLevel * worryLevel
-    case s"old * $value" => worryLevel * value.toLong
-    case s"old + $value" => worryLevel + value.toLong
   }
 
   def read(
@@ -113,7 +107,12 @@ object PuzzlesDay11 extends App {
               .toList
             State(monkey.copy(items = items) :: state.monkeys.tail)
           }
-          case OperationPattern(operation) => {
+          case OperationPattern(operationStr) => {
+            val operation: Long => Long = operationStr match {
+              case s"old * old" => v => v * v
+              case s"old * $value" => v => v * value.toLong
+              case s"old + $value" => v => v + value.toLong
+            }
             val monkey = state.monkeys.head
             State(monkey.copy(operation = operation) :: state.monkeys.tail)
           }
