@@ -12,67 +12,59 @@ object PuzzlesDay11 extends App {
     test: Int = 0,
     throwIfTrue: Int = 0,
     throwIfFalse: Int = 0,
-    inspectedElements: Int = 0
+    inspectedElements: Long = 0
   )
 
-  def puzzle(
-    input: String
-  ) = {
+  def puzzle(input: String) = {
     val monkeys = read(input)
-    (1 to 20).foldLeft(monkeys) {
-      (monkeys, i) => evaluate(monkeys, _ / 3)
-    }.map(_.inspectedElements)
-    .sorted
-    .reverse
-    .take(2)
-    .product
+    solve(monkeys, 20, _ / 3)
   }
 
-  def puzzleTwo(
-    input: String
-  ) = {
+  def puzzleTwo(input: String) = {
     val monkeys = read(input)
     val modulo = monkeys.map(_.test)
       .product
-    (1 to 10000).foldLeft(monkeys) {
-      (monkeys, i) => evaluate(monkeys, _ % modulo)
+    solve(monkeys, 10000, _ % modulo)
+  }
+
+  def solve(monkeys: Vector[Monkey], count: Int, adjustWL: Long => Long) = {
+    (1 to count).foldLeft(monkeys) {
+      (monkeys, i) => evaluate(monkeys, adjustWL)
     }.map(_.inspectedElements)
     .sorted
     .reverse
     .take(2)
-    .map(_.toLong)
     .product
   }
 
-  def evaluate(monkeys: Vector[Monkey], adjustWorryLevel: Long => Long) = {
-    //println(monkeys)
+  def evaluate(monkeys: Vector[Monkey], adjustWL: Long => Long) = {
     (0 to monkeys.last.number)
       .foldLeft(monkeys) {
-        (monkeys, i) => inspectElements(monkeys, monkeys(i), adjustWorryLevel)
+        (monkeys, i) => inspectElements(monkeys, monkeys(i), adjustWL)
       }
   }
 
   def inspectElements(
     monkeys: Vector[Monkey],
     monkey: Monkey,
-    adjustWorryLevel: Long => Long
+    adjustWL: Long => Long
   ): Vector[Monkey] = {
     if (monkey.items.isEmpty) {
       monkeys
     } else {
-      val (newMonkeys, newMonkey) = inspectElement(monkeys, monkey, adjustWorryLevel)
-      inspectElements(newMonkeys, newMonkey, adjustWorryLevel)
+      val (newMonkeys, newMonkey) = inspectElement(monkeys, monkey, adjustWL)
+      inspectElements(newMonkeys, newMonkey, adjustWL)
     }
   }
 
   def inspectElement(
     monkeys: Vector[Monkey],
     monkey: Monkey,
-    adjustWorryLevel: Long => Long
+    adjustWL: Long => Long
   ) = {
     val inspectedElement = monkey.items.head
     val worryLevel = monkey.operation(inspectedElement)
-    val wl = adjustWorryLevel(worryLevel)
+    val wl = adjustWL(worryLevel)
     val test = (wl % monkey.test) == 0
     val newMonkey = monkey.copy(
       items = monkey.items.tail,
@@ -88,9 +80,7 @@ object PuzzlesDay11 extends App {
     (newMonkeys.updated(throwNumber, newThrowedMonkey), newMonkey)
   }
 
-  def read(
-    input: String
-  ) = {
+  def read(input: String) = {
     case class State(monkeys: List[Monkey] = Nil)
     val ItemsPattern = "  Starting items: ([0-9, ]+)".r
     val OperationPattern = "  Operation: new = (.+)".r
