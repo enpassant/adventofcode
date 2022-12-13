@@ -1,11 +1,13 @@
 package adventofcode.year2022
 
 import scala.io.Source
+import scala.collection.immutable.Queue
 
+/** https://en.wikipedia.org/wiki/Breadth-first_search */
 object PuzzlesDay12 extends App {
 
   case class Pos(x: Int, y: Int)
-  case class PathLength(pos: Pos, length: Int = 0)
+  case class PosLength(pos: Pos, length: Int = 0)
 
   def puzzle(input: String) = {
     val map = read(input)
@@ -22,41 +24,35 @@ object PuzzlesDay12 extends App {
   def walk(
     heightMap: Map[Pos, Int],
     beginPos: Pos,
-    isFinish: Int => Boolean,
+    isGoal: Int => Boolean,
     canMove: (Int, Int) => Boolean
   ): Int = {
-    implicit val pathOrdering: Ordering[PathLength] =
-      Ordering.by[PathLength,Int](_.length)
-
-    def loop(visited: Set[Pos], queue: List[PathLength]): Int = {
+    def loop(visited: Set[Pos], queue: Queue[PosLength]): Int = {
       if (queue.isEmpty) {
         0
       } else {
-        val pathLength = queue.head
+        val (pathLength, newQueue) = queue.dequeue
         val pos = pathLength.pos
         val height = heightMap(pos)
-        if (!visited.contains(pos)) {
-          val neighbours = getNeighbours(pos)
-            .filter(heightMap.contains)
-            .filter(p => canMove(height, heightMap(p)))
-          if (neighbours.exists(p => isFinish(heightMap(p)))) {
-            pathLength.length + 1
-          } else {
-            val neighboursPath = neighbours.map(
-              p => PathLength(p, pathLength.length + 1)
-            )
-            loop(
-              visited + pos,
-              (queue.tail ++ neighboursPath).sorted
-            )
-          }
+        val neighbours = getNeighbours(pos)
+          .filter(p => !visited.contains(pos))
+          .filter(heightMap.contains)
+          .filter(p => canMove(height, heightMap(p)))
+        if (neighbours.exists(p => isGoal(heightMap(p)))) {
+          pathLength.length + 1
         } else {
-            loop(visited, queue.tail.sorted)
+          val neighboursPath = neighbours.map(
+            p => PosLength(p, pathLength.length + 1)
+          )
+          loop(
+            visited + pos,
+            newQueue.enqueue(neighboursPath)
+          )
         }
       }
     }
 
-    loop(Set(), List(PathLength(beginPos, 0)))
+    loop(Set(), Queue(PosLength(beginPos, 0)))
   }
 
   def getNeighbours(p: Pos) : List[Pos] = {

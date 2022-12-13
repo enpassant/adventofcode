@@ -6,6 +6,8 @@ lazy val root = project
     name := "adventofcode",
     version := "1.0.0-SNAPSHOT",
 
+    fork := true,
+
     scalaVersion := scala3Version,
 
     libraryDependencies ++= Seq(
