@@ -3,6 +3,8 @@ package adventofcode.year2022
 import scala.io.Source
 import scala.collection.immutable.Queue
 
+import adventofcode.Graph
+
 /** https://en.wikipedia.org/wiki/Breadth-first_search */
 object PuzzlesDay12 extends App {
 
@@ -12,55 +14,45 @@ object PuzzlesDay12 extends App {
   def puzzle(input: String) = {
     val map = read(input)
     val startPos = getPos(map)
-    walk(map, startPos, _ == 26, (from, to) => to - from <= 1)
+    Graph.bfs(
+      PosLength(startPos, 0),
+      getChildren(map)((from, to) => to - from <= 1),
+      v => map(v.pos) == 26
+    ).map(_.length)
+    .get
   }
 
   def puzzleTwo(input: String) = {
     val map = read(input)
     val endPos = getPos(map, 26)
-    walk(map, endPos, _ == 0, (from, to) => from - to <= 1)
+    Graph.bfs(
+      PosLength(endPos, 0),
+      getChildren(map)((from, to) =>  from - to <= 1),
+      v => map(v.pos) == 0
+    ).map(_.length)
+    .get
   }
 
-  def walk(
-    heightMap: Map[Pos, Int],
-    beginPos: Pos,
-    isGoal: Int => Boolean,
-    canMove: (Int, Int) => Boolean
-  ): Int = {
-    def loop(visited: Set[Pos], queue: Queue[PosLength]): Int = {
-      if (queue.isEmpty) {
-        0
-      } else {
-        val (pathLength, newQueue) = queue.dequeue
-        val pos = pathLength.pos
-        val height = heightMap(pos)
-        val neighbours = getNeighbours(pos)
-          .filter(p => !visited.contains(pos))
-          .filter(heightMap.contains)
-          .filter(p => canMove(height, heightMap(p)))
-        if (neighbours.exists(p => isGoal(heightMap(p)))) {
-          pathLength.length + 1
-        } else {
-          val neighboursPath = neighbours.map(
-            p => PosLength(p, pathLength.length + 1)
-          )
-          loop(
-            visited + pos,
-            newQueue.enqueue(neighboursPath)
-          )
-        }
-      }
-    }
-
-    loop(Set(), Queue(PosLength(beginPos, 0)))
+  def getNeighbours(p: Pos) : Vector[Pos] = {
+    Vector(
+      Pos(p.x + 1, p.y),
+      Pos(p.x, p.y + 1),
+      Pos(p.x - 1, p.y),
+      Pos(p.x, p.y - 1)
+    )
   }
 
-  def getNeighbours(p: Pos) : List[Pos] = {
-    Pos(p.x + 1, p.y)
-      :: Pos(p.x, p.y + 1)
-      :: Pos(p.x - 1, p.y)
-      :: Pos(p.x, p.y - 1)
-      :: Nil
+  def getChildren
+    (heightMap: Map[Pos, Int])
+    (canMove: (Int, Int) => Boolean)
+    (node: PosLength): Vector[PosLength]=
+  {
+    getNeighbours(node.pos)
+      .filter(heightMap.contains)
+      .filter(p => canMove(heightMap(node.pos), heightMap(p)))
+      .map(
+        p => PosLength(p, node.length + 1)
+      )
   }
 
   def getPos(map: Map[Pos, Int], value: Int = -1): Pos = {
