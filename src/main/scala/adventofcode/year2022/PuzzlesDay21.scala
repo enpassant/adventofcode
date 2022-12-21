@@ -3,9 +3,11 @@ package adventofcode.year2022
 import scala.io.Source
 import scala.annotation.tailrec
 
+import adventofcode.Graph
+
 object PuzzlesDay21 extends App {
 
-  trait Node
+  sealed trait Node
   case class MonkeyNode(name: String, m1: String, m2: String, operation: Char)
     extends Node
   case class MonkeyValue(name: String, value: Long)
@@ -17,45 +19,41 @@ object PuzzlesDay21 extends App {
   def puzzle(input: String) = {
     val data = read(input)
     val root = data("root")
-    postorder1(data, root)
+    Graph.postorder(root, getChildren(data), visit1(data))
   }
 
   def puzzleTwo(input: String) = {
     val data = read(input)
     val root = data("root")
-    postorder2(data, root)
+    Graph.postorder(root, getChildren(data), visit2(data))
   }
 
-  def postorder1(values: MonkeyTree, node: Node): Value = {
+  def getChildren(tree: MonkeyTree)(node: Node) = {
     node match {
-      case MonkeyNode(name, m1, m2, operation) => {
-        val fn1 = postorder1(values, values(m1))
-        val fn2 = postorder1(values, values(m2))
-        eval(fn1, fn2, operation)
-      }
-      case MonkeyValue(name, value) => value
+      case MonkeyNode(_, m1, m2, _) => Vector(tree(m1), tree(m2))
+      case MonkeyValue(_, _) => Vector()
     }
   }
 
-  def postorder2(values: MonkeyTree, node: Node): Value = {
-    //println(node)
+  def visit1(tree: MonkeyTree)(node: Node, values: Vector[Value]): Value = {
+    node match {
+      case MonkeyNode(_, _, _, operation) =>
+        eval(values(0), values(1), operation)
+      case MonkeyValue(_, value) => value
+    }
+  }
+
+  def visit2(tree: MonkeyTree)(node: Node, values: Vector[Value]): Value = {
     node match {
       case MonkeyValue("humn", _) => v => v
-      case MonkeyNode("root", m1, m2, operation) => {
-        val fn1 = postorder2(values, values(m1))
-        val fn2 = postorder2(values, values(m2))
-        (fn1, fn2) match {
-          case (fn: (Long => Long), v: Long) => fn(v)
-          case (v: Long, fn: (Long => Long)) => fn(v)
-          case _ => 0L
-        }
+      case MonkeyNode("root", _, _, _) => values match {
+        case Vector(fn: (Long => Long), v: Long) => fn(v)
+        case Vector(v: Long, fn: (Long => Long)) => fn(v)
+        case _ => 0L
       }
-      case MonkeyNode(name, m1, m2, operation) => {
-        val fn1 = postorder2(values, values(m1))
-        val fn2 = postorder2(values, values(m2))
-        eval(fn1, fn2, operation)
-      }
-      case MonkeyValue(name, value) => value
+      case MonkeyNode(_, _, _, operation) =>
+        eval(values(0), values(1), operation)
+      case MonkeyValue(_, value) => value
     }
   }
 
