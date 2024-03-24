@@ -1,5 +1,5 @@
 const std = @import("std");
-const data = @embedFile("data01.txt");
+const data = @embedFile("input.txt");
 
 pub fn main() !void {
     try step1();
