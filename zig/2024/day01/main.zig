@@ -90,12 +90,9 @@ fn step2() !void {
         const num: i32 = entry.key_ptr.*;
         const count: i32 = entry.value_ptr.*;
 
-        // std.debug.print("Num: {} {}\n", .{ num, count });
-
         if (map[1].contains(num)) {
             const count2: i32 = map[1].get(num).?;
             total += count * num * count2;
-            std.debug.print("Num2: {}\n", .{count2});
         }
     }
     std.debug.print("Sum 2: {}\n", .{total});
