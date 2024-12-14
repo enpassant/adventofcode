@@ -18,8 +18,8 @@ pub fn main() {
   let half_width = width / 2 + 1
   let half_height = height / 2 + 1
 
-  // let robots = util.load("src/test.txt", read_robots)
-  let robots = util.load("src/input.txt", read_robots)
+  // let robots = util.load("data/day14/test.txt", read_robots)
+  let robots = util.load("data/day14/input.txt", read_robots)
 
   let data =
     robots
