@@ -27,7 +27,10 @@ pub fn main() {
     |> yielder.fold(from: dict.new(), with: fn(data, r) {
       dict.upsert(
         data,
-        util.Pos(mod(r.x + r.vx * 100, width), mod(r.y + r.vy * 100, height)),
+        util.Pos(
+          util.mod(r.x + r.vx * 100, width),
+          util.mod(r.y + r.vy * 100, height),
+        ),
         util.increment,
       )
     })
@@ -56,8 +59,8 @@ pub fn main() {
           |> yielder.from_list
           |> yielder.fold(from: 0, with: fn(sum, r) {
             sum
-            + int.absolute_value(mod(r.x + r.vx * i, width) - 50)
-            + int.absolute_value(mod(r.y + r.vy * i, height) - 50)
+            + int.absolute_value(util.mod(r.x + r.vx * i, width) - 50)
+            + int.absolute_value(util.mod(r.y + r.vy * i, height) - 50)
           })
         }
       {
@@ -76,8 +79,8 @@ pub fn main() {
       dict.upsert(
         data,
         util.Pos(
-          mod(r.x + r.vx * min_step.0, width),
-          mod(r.y + r.vy * min_step.0, height),
+          util.mod(r.x + r.vx * min_step.0, width),
+          util.mod(r.y + r.vy * min_step.0, height),
         ),
         util.increment,
       )
@@ -111,13 +114,6 @@ pub fn read_robots(line: String) -> Result(Robot, String) {
   case nums {
     [x, y, vx, vy] -> Ok(Robot(x, y, vx, vy))
     _ -> Error("")
-  }
-}
-
-pub fn mod(n: Int, m: Int) {
-  case n {
-    _ if n < 0 -> { m + { n % m } } % m
-    _ -> n % m
   }
 }
 
