@@ -2,6 +2,8 @@ import file_streams/file_stream
 import file_streams/text_encoding
 import gleam/dict
 import gleam/function
+import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -20,6 +22,29 @@ pub fn load(file_name: String, parser: fn(String) -> Result(a, b)) -> List(a) {
   |> yielder.to_list
 }
 
+pub fn load_second(
+  file_name: String,
+  parser: fn(String) -> Result(a, b),
+) -> List(a) {
+  let assert Ok(stream) =
+    file_stream.open_read_text(file_name, text_encoding.Latin1)
+
+  yielder.repeatedly(fn() { file_stream.read_line(stream) })
+  |> yielder.take_while(result.is_ok)
+  |> yielder.filter_map(function.identity)
+  |> yielder.map(fn(line) {
+    case line {
+      "\n" -> Error("")
+      _ -> Ok(line)
+    }
+  })
+  |> yielder.drop_while(result.is_ok)
+  |> yielder.filter_map(function.identity)
+  |> yielder.map(parser)
+  |> yielder.filter_map(function.identity)
+  |> yielder.to_list
+}
+
 pub fn load_matrix(
   file_name: String,
   parser: fn(String) -> Result(a, b),
@@ -28,6 +53,14 @@ pub fn load_matrix(
     file_stream.open_read_text(file_name, text_encoding.Latin1)
 
   yielder.repeatedly(fn() { file_stream.read_line(stream) })
+  |> yielder.take_while(result.is_ok)
+  |> yielder.filter_map(function.identity)
+  |> yielder.map(fn(line) {
+    case line {
+      "\n" -> Error("")
+      _ -> Ok(line)
+    }
+  })
   |> yielder.take_while(result.is_ok)
   |> yielder.filter_map(function.identity)
   |> yielder.map(fn(str) {
@@ -51,6 +84,29 @@ pub fn load_matrix(
   })
 }
 
+pub fn draw(map: dict.Dict(Pos, String)) -> dict.Dict(Pos, String) {
+  let max_pos =
+    map
+    |> dict.fold(Pos(0, 0), fn(pos, p, _) {
+      Pos(int.max(pos.x, p.x), int.max(pos.y, p.y))
+    })
+
+  list.range(from: 0, to: max_pos.y)
+  |> list.each(fn(y) {
+    list.range(from: 0, to: max_pos.x)
+    |> list.each(fn(x) {
+      io.print(map |> dict.get(Pos(x, y)) |> result.unwrap(" "))
+    })
+    io.println("")
+  })
+
+  map
+}
+
+pub const way4_list = [
+  PosDir(1, 0, 0), PosDir(0, 1, 1), PosDir(-1, 0, 2), PosDir(0, -1, 3),
+]
+
 pub fn increment(x: Option(Int)) {
   case x {
     Some(i) -> i + 1
@@ -72,6 +128,18 @@ pub fn mod(n: Int, m: Int) {
   }
 }
 
+pub type PosDir {
+  PosDir(x: Int, y: Int, dir: Int)
+}
+
 pub type Pos {
   Pos(x: Int, y: Int)
+}
+
+pub fn find_pos(map: dict.Dict(Pos, String), ch: String) -> Pos {
+  map
+  |> dict.filter(fn(_, str) { str == ch })
+  |> dict.keys
+  |> list.first
+  |> result.unwrap(Pos(0, 0))
 }
