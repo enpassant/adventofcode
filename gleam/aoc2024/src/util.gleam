@@ -6,9 +6,11 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/queue
 import gleam/result
 import gleam/string
 import gleam/yielder
+import gleamy/priority_queue as pq
 
 pub fn load(file_name: String, parser: fn(String) -> Result(a, b)) -> List(a) {
   let assert Ok(stream) =
@@ -18,6 +20,7 @@ pub fn load(file_name: String, parser: fn(String) -> Result(a, b)) -> List(a) {
   |> yielder.take_while(result.is_ok)
   |> yielder.filter_map(function.identity)
   |> yielder.map(parser)
+  |> yielder.take_while(result.is_ok)
   |> yielder.filter_map(function.identity)
   |> yielder.to_list
 }
@@ -84,7 +87,20 @@ pub fn load_matrix(
   })
 }
 
+pub fn draw_with_char(str: String) {
+  fn(map: dict.Dict(Pos, a)) -> dict.Dict(Pos, a) {
+    draw_with(map, fn(_) { str })
+  }
+}
+
 pub fn draw(map: dict.Dict(Pos, String)) -> dict.Dict(Pos, String) {
+  draw_with(map, function.identity)
+}
+
+pub fn draw_with(
+  map: dict.Dict(Pos, a),
+  convert: fn(a) -> String,
+) -> dict.Dict(Pos, a) {
   let max_pos =
     map
     |> dict.fold(Pos(0, 0), fn(pos, p, _) {
@@ -95,7 +111,10 @@ pub fn draw(map: dict.Dict(Pos, String)) -> dict.Dict(Pos, String) {
   |> list.each(fn(y) {
     list.range(from: 0, to: max_pos.x)
     |> list.each(fn(x) {
-      io.print(map |> dict.get(Pos(x, y)) |> result.unwrap(" "))
+      case dict.get(map, Pos(x, y)) {
+        Ok(a) -> io.print(convert(a))
+        _ -> io.print(" ")
+      }
     })
     io.println("")
   })
@@ -142,4 +161,97 @@ pub fn find_pos(map: dict.Dict(Pos, String), ch: String) -> Pos {
   |> dict.keys
   |> list.first
   |> result.unwrap(Pos(0, 0))
+}
+
+pub fn binary_search(
+  min: Int,
+  max: Int,
+  search: fn(Int) -> Result(a, Bool),
+) -> Result(a, #(Int, Bool)) {
+  binary_search_rec(min, max, { max - min } / 2 + min, search)
+}
+
+fn binary_search_rec(
+  min: Int,
+  max: Int,
+  n: Int,
+  search: fn(Int) -> Result(a, Bool),
+) -> Result(a, #(Int, Bool)) {
+  case search(n) {
+    Ok(a) -> Ok(a)
+    Error(less) -> {
+      case less && n > min, !less && n < max {
+        True, _ ->
+          binary_search_rec(
+            min,
+            n - 1,
+            int.min(n - 1, { n - min } / 2 + min),
+            search,
+          )
+        _, True ->
+          binary_search_rec(
+            n + 1,
+            max,
+            int.max(n + 1, { max - n } / 2 + n),
+            search,
+          )
+        _, _ -> Error(#(n, less))
+      }
+    }
+  }
+}
+
+pub fn find_dijkstra(
+  map: dict.Dict(a, v),
+  start_pos: a,
+  next_positions: fn(dict.Dict(a, #(Int, v)), a) -> List(#(a, #(Int, v))),
+  calc_price: fn(#(a, v), #(a, v)) -> #(Int, v),
+) -> dict.Dict(a, #(Int, v)) {
+  let queue =
+    map
+    |> dict.to_list
+    |> list.map(fn(k) {
+      case k.0 == start_pos {
+        True -> #(k.0, #(0, k.1))
+        _ -> #(k.0, #(1_000_000_000, k.1))
+      }
+    })
+    |> pq.from_list(fn(a, b) { int.compare(a.1.0, b.1.0) })
+  find_dijkstra_rec(queue, dict.new(), next_positions, calc_price)
+}
+
+fn find_dijkstra_rec(
+  queue: pq.Queue(#(a, #(Int, v))),
+  result: dict.Dict(a, #(Int, v)),
+  next_positions: fn(dict.Dict(a, #(Int, v)), a) -> List(#(a, #(Int, v))),
+  calc_price: fn(#(a, v), #(a, v)) -> #(Int, v),
+) -> dict.Dict(a, #(Int, v)) {
+  queue |> pq.count |> io.debug
+  case pq.pop(queue) {
+    Ok(first) -> {
+      let new_result = dict.upsert(result, first.0.0, fn(_) { first.0.1 })
+      let dq =
+        first.1
+        |> pq.to_list
+        |> dict.from_list
+      let positions = next_positions(dq, first.0.0)
+      let new_queue =
+        positions
+        |> list.fold(dq, fn(d, pj) {
+          dict.upsert(d, pj.0, fn(opt) {
+            let kpj_kv = calc_price(#(first.0.0, first.0.1.1), #(pj.0, pj.1.1))
+            let kpj = #(first.0.1.0 + kpj_kv.0, kpj_kv.1)
+            case opt {
+              Some(price) if price.0 < kpj.0 -> price
+              _ -> kpj
+            }
+          })
+        })
+        |> dict.to_list
+        |> pq.from_list(fn(a, b) { int.compare(a.1.0, b.1.0) })
+
+      find_dijkstra_rec(new_queue, new_result, next_positions, calc_price)
+    }
+    _ -> result
+  }
 }
