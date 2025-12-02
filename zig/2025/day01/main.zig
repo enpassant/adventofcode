@@ -7,7 +7,7 @@ pub fn main() !void {
     try step2();
 }
 
-fn step1() !void {
+fn step1() !usize {
     const ArrayList = std.ArrayList;
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -37,9 +37,11 @@ fn step1() !void {
         }
     }
     std.debug.print("Sum 1: {}\n", .{count});
+
+    return count;
 }
 
-fn step2() !void {
+fn step2() !usize {
     const ArrayList = std.ArrayList;
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -76,4 +78,14 @@ fn step2() !void {
         total = @mod(next, 100);
     }
     std.debug.print("Sum 2: {}\n", .{count});
+
+    return count;
+}
+
+test "Day 01 Part 1 result is good" {
+    try std.testing.expectEqual(1074, step1());
+}
+
+test "Day 01 Part 2 result is good" {
+    try std.testing.expectEqual(6254, step2());
 }
